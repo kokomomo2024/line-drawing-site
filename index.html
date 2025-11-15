@@ -1,38 +1,87 @@
-                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                const data = imageData.data;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Line Art Black & White</title>
+<style>
+body { font-family: Arial; text-align:center; padding:20px; }
+#preview, #output { max-width:90%; margin-top:20px; border:2px solid #ccc; }
+.box { background:#fff; padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.1); display:inline-block; }
+button { margin-top:15px; padding:10px 20px; font-size:16px; border:none; background:#007bff; color:white; border-radius:8px; cursor:pointer; }
+</style>
+</head>
+<body>
+<h2>تحويل الصورة إلى رسم هندسي أسود وأبيض</h2>
+<div class="box">
+<input type="file" id="imageInput" accept="image/*"><br>
+<img id="preview"><br>
+<canvas id="canvas" style="display:none;"></canvas>
+<h3>الرسم الناتج:</h3>
+<img id="output"><br>
+<button onclick="downloadResult()">تحميل الرسم الهندسي</button>
+</div>
 
-                // Convert to grayscale + edge detection
-                for (let i = 0; i < data.length; i += 4) {
-                    const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
-                    data[i] = data[i + 1] = data[i + 2] = avg;
-                }
+<script>
+const input = document.getElementById("imageInput");
+const preview = document.getElementById("preview");
+const output = document.getElementById("output");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
 
-                // Simple edge detection
-                for (let y = 1; y < canvas.height - 1; y++) {
-                    for (let x = 1; x < canvas.width - 1; x++) {
-                        const i = (y * canvas.width + x) * 4;
-                        const iRight = (y * canvas.width + (x + 1)) * 4;
-                        const diff = Math.abs(data[i] - data[iRight]);
-                        const v = diff > 20 ? 0 : 255;
-                        data[i] = data[i + 1] = data[i + 2] = v;
-                    }
-                }
-
-                ctx.putImageData(imageData, 0, 0);
-
-                output.src = canvas.toDataURL();
-            };
-        };
-        reader.readAsDataURL(file);
-    });
-
-    function downloadResult() {
-        const link = document.createElement("a");
-        link.download = "line_drawing.png";
-        link.href = output.src;
-        link.click();
+input.addEventListener("change", function(e){
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = function(event){
+        preview.src = event.target.result;
     }
-</script>
+    reader.readAsDataURL(file);
+});
 
+preview.onload = function(){
+    // ضبط أبعاد canvas بعد تحميل الصورة
+    canvas.width = preview.naturalWidth;
+    canvas.height = preview.naturalHeight;
+    ctx.drawImage(preview,0,0,canvas.width,canvas.height);
+
+    // الحصول على بكسلات الصورة
+    let imageData = ctx.getImageData(0,0,canvas.width,canvas.height);
+    let data = imageData.data;
+
+    // تحويل الصورة إلى رمادي
+    for(let i=0; i<data.length; i+=4){
+        const avg = 0.3*data[i]+0.59*data[i+1]+0.11*data[i+2];
+        data[i]=data[i+1]=data[i+2]=avg;
+    }
+
+    // كشف الحواف بسيط (أسود على أبيض)
+    const copy = new Uint8ClampedArray(data); // نسخ البيانات لتجنب التداخل
+    for(let y=1; y<canvas.height-1; y++){
+        for(let x=1; x<canvas.width-1; x++){
+            const i = (y*canvas.width + x)*4;
+            const iRight = (y*canvas.width + (x+1))*4;
+            const iDown = ((y+1)*canvas.width + x)*4;
+
+            const dx = Math.abs(copy[i] - copy[iRight]);
+            const dy = Math.abs(copy[i] - copy[iDown]);
+            const g = dx + dy;
+
+            const v = g > 20 ? 0 : 255; // خط أسود إذا فرق البكسلات كبير، خلفية بيضاء
+            data[i]=data[i+1]=data[i+2]=v;
+        }
+    }
+
+    ctx.putImageData(imageData,0,0);
+    output.src = canvas.toDataURL();
+}
+
+function downloadResult(){
+    const link = document.createElement("a");
+    link.download = "line_drawing_bw.png";
+    link.href = output.src;
+    link.click();
+}
+</script>
 </body>
 </html>
