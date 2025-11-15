@@ -1,19 +1,20 @@
+
 <!DOCTYPE html>
 <html lang="ar">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>تحويل الجسم إلى رسم هندسي تقريبي</title>
+<title>محاذاة الصورة بدون أبيض وأسود</title>
 <style>
 body { font-family: Arial; text-align:center; padding:20px; background:#f0f0f0; }
-#preview, #jpegPreview { max-width:90%; margin-top:20px; border:2px solid #ccc; }
+#preview, #alignedPreview { max-width:90%; margin-top:20px; border:2px solid #ccc; }
 .box { background:#fff; padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.1); display:inline-block; }
 button { margin-top:15px; padding:10px 20px; font-size:16px; border:none; background:#007bff; color:white; border-radius:8px; cursor:pointer; }
 canvas { display:none; }
 </style>
 </head>
 <body>
-<h2>تحويل الجسم إلى رسم هندسي تقريبي</h2>
+<h2>محاذاة الصورة بدون أبيض وأسود</h2>
 
 <div class="box">
 <button onclick="document.getElementById('imageInput').click()">اختر صورة</button>
@@ -21,27 +22,18 @@ canvas { display:none; }
 
 <img id="preview"><br>
 
-<h3>معاينة الرسم الهندسي (Vector تقريبية):</h3>
-<div id="svgOutput"></div><br>
+<h3>الصورة بعد المحاذاة:</h3>
+<img id="alignedPreview"><br>
 
-<h3>تحميل الرسم كصورة JPEG:</h3>
-<img id="jpegPreview"><br>
-
-<button onclick="downloadJPEG()">تحميل JPEG</button>
+<button onclick="downloadAlignedJPEG()">تحميل الصورة</button>
 </div>
-
-<!-- مكتبة ImageTracerJS -->
-<script src="https://cdn.jsdelivr.net/npm/imagetracerjs@1.2.9/imagetracer.min.js"></script>
 
 <script>
 const input = document.getElementById("imageInput");
 const preview = document.getElementById("preview");
-const svgOutput = document.getElementById("svgOutput");
-const jpegPreview = document.getElementById("jpegPreview");
+const alignedPreview = document.getElementById("alignedPreview");
 let img = new Image();
-let generatedSVG = "";
 
-// رفع الصورة وعرضها
 input.addEventListener("change", function(e){
     const file = e.target.files[0];
     if(!file) return;
@@ -54,54 +46,27 @@ input.addEventListener("change", function(e){
 
 img.onload = function(){
     preview.src = img.src;
-    setTimeout(processImage, 200); // يعطي وقت لتحميل الصورة
+    alignImage();
 }
 
-// معالجة الصورة وتحويلها إلى SVG vector دقيق
-function processImage(){
-    const MAX_SIZE = 800; // لتسريع المعالجة على الهواتف
+// دالة محاذاة الصورة (توسيط وتصغير إذا كبير)
+function alignImage(){
+    const MAX_SIZE = 800; // حجم أقصى للصورة
     let scale = Math.min(MAX_SIZE/img.naturalWidth, MAX_SIZE/img.naturalHeight, 1);
     const canvas = document.createElement("canvas");
     canvas.width = img.naturalWidth * scale;
     canvas.height = img.naturalHeight * scale;
     const ctx = canvas.getContext("2d");
-    ctx.drawImage(img,0,0,canvas.width,canvas.height);
-
-    const dataURL = canvas.toDataURL("image/png");
-
-    // إعدادات دقيقة لتوليد خطوط واضحة
-    ImageTracer.imageToSVG(dataURL, function(svgString){
-        generatedSVG = svgString;
-        svgOutput.innerHTML = svgString;
-        convertSVGtoJPEG(svgString, canvas.width, canvas.height);
-    }, {ltres:1, qtres:1, pathomit:0, roundcoords:1, scale:1, strokewidth:1});
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    alignedPreview.src = canvas.toDataURL("image/jpeg",1.0);
 }
 
-// تحويل SVG إلى JPEG
-function convertSVGtoJPEG(svgString, width, height){
-    const svgBlob = new Blob([svgString], {type:"image/svg+xml;charset=utf-8"});
-    const url = URL.createObjectURL(svgBlob);
-    const imgObj = new Image();
-    imgObj.onload = function(){
-        const canvas = document.createElement("canvas");
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext("2d");
-        ctx.fillStyle = "white"; // خلفية بيضاء
-        ctx.fillRect(0,0,width,height);
-        ctx.drawImage(imgObj,0,0);
-        jpegPreview.src = canvas.toDataURL("image/jpeg",1.0);
-        URL.revokeObjectURL(url);
-    }
-    imgObj.src = url;
-}
-
-// تحميل JPEG
-function downloadJPEG(){
-    if(!jpegPreview.src) return alert("انتظر حتى يتم توليد الصورة");
+// تحميل الصورة بعد المحاذاة
+function downloadAlignedJPEG(){
+    if(!alignedPreview.src) return alert("انتظر حتى يتم توليد الصورة");
     const link = document.createElement("a");
-    link.href = jpegPreview.src;
-    link.download = "geometric_part.jpg";
+    link.href = alignedPreview.src;
+    link.download = "aligned_image.jpg";
     link.click();
 }
 </script>
