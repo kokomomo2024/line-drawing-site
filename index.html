@@ -1,31 +1,31 @@
-
 <!DOCTYPE html>
 <html lang="ar">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>محاذاة الصورة بدون أبيض وأسود</title>
+<title>محاذاة الصورة بدون أي تأثيرات</title>
 <style>
 body { font-family: Arial; text-align:center; padding:20px; background:#f0f0f0; }
-#preview, #alignedPreview { max-width:90%; margin-top:20px; border:2px solid #ccc; }
+#preview, #alignedPreview { max-width:90%; margin-top:20px; border:2px solid #ccc; border-radius:10px; }
 .box { background:#fff; padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.1); display:inline-block; }
-button { margin-top:15px; padding:10px 20px; font-size:16px; border:none; background:#007bff; color:white; border-radius:8px; cursor:pointer; }
+button { margin-top:15px; padding:12px 25px; font-size:17px; border:none; background:#007bff; color:white; border-radius:10px; cursor:pointer; }
 canvas { display:none; }
 </style>
 </head>
 <body>
-<h2>محاذاة الصورة بدون أبيض وأسود</h2>
+<h2>محاذاة الصورة بدون أي تأثيرات</h2>
 
 <div class="box">
-<button onclick="document.getElementById('imageInput').click()">اختر صورة</button>
+<button onclick="document.getElementById('imageInput').click()">اختر صورة من الهاتف</button>
 <input type="file" id="imageInput" accept="image/*" style="display:none;"><br>
 
-<img id="preview"><br>
+<h3>الصورة الأصلية:</h3>
+<img id="preview">
 
-<h3>الصورة بعد المحاذاة:</h3>
+<h3>الصورة بعد المحاذاة (بدون تغيير الألوان):</h3>
 <img id="alignedPreview"><br>
 
-<button onclick="downloadAlignedJPEG()">تحميل الصورة</button>
+<button onclick="downloadAlignedJPEG()">تحميل الصورة كـ JPEG</button>
 </div>
 
 <script>
@@ -44,26 +44,31 @@ input.addEventListener("change", function(e){
     reader.readAsDataURL(file);
 });
 
+// بعد تحميل الصورة
 img.onload = function(){
     preview.src = img.src;
     alignImage();
 }
 
-// دالة محاذاة الصورة (توسيط وتصغير إذا كبير)
+// محاذاة الصورة (توسيط + تغيير حجم إذا ضروري)
 function alignImage(){
-    const MAX_SIZE = 800; // حجم أقصى للصورة
-    let scale = Math.min(MAX_SIZE/img.naturalWidth, MAX_SIZE/img.naturalHeight, 1);
+    const MAX_SIZE = 900; // الحجم الأقصى للعرض
+    let scale = Math.min(MAX_SIZE / img.naturalWidth, MAX_SIZE / img.naturalHeight, 1);
+
     const canvas = document.createElement("canvas");
     canvas.width = img.naturalWidth * scale;
     canvas.height = img.naturalHeight * scale;
+
     const ctx = canvas.getContext("2d");
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-    alignedPreview.src = canvas.toDataURL("image/jpeg",1.0);
+
+    // الصورة الملونة بعد المحاذاة
+    alignedPreview.src = canvas.toDataURL("image/jpeg", 1.0);
 }
 
-// تحميل الصورة بعد المحاذاة
+// تحميل الصورة
 function downloadAlignedJPEG(){
-    if(!alignedPreview.src) return alert("انتظر حتى يتم توليد الصورة");
+    if(!alignedPreview.src) return alert("الصورة لم تُجهز بعد!");
     const link = document.createElement("a");
     link.href = alignedPreview.src;
     link.download = "aligned_image.jpg";
