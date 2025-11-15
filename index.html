@@ -3,17 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>تحويل أي جزء بالصورة إلى رسم هندسي تقريبي</title>
+<title>رسم هندسي تقريبي</title>
 <style>
 body { font-family: Arial; text-align:center; padding:20px; background:#f0f0f0; }
-#preview, #canvasPreview, #jpegPreview { max-width:90%; margin-top:20px; border:2px solid #ccc; }
+#preview, #jpegPreview { max-width:90%; margin-top:20px; border:2px solid #ccc; }
 .box { background:#fff; padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.1); display:inline-block; }
 button { margin-top:15px; padding:10px 20px; font-size:16px; border:none; background:#007bff; color:white; border-radius:8px; cursor:pointer; }
 canvas { display:none; }
 </style>
 </head>
 <body>
-<h2>تحويل أي جزء بالصورة إلى رسم هندسي تقريبي</h2>
+<h2>تحويل أي جسم بالصورة إلى رسم هندسي تقريبي</h2>
 
 <div class="box">
 <button onclick="document.getElementById('imageInput').click()">اختر صورة</button>
@@ -21,7 +21,7 @@ canvas { display:none; }
 
 <img id="preview"><br>
 
-<h3>الرسم الهندسي الناتج (Vector تقريبي):</h3>
+<h3>معاينة الرسم الهندسي (Vector تقريبية):</h3>
 <div id="svgOutput"></div><br>
 
 <h3>تحميل الرسم كصورة JPEG:</h3>
@@ -57,36 +57,38 @@ img.onload = function(){
     processImage();
 }
 
-// معالجة الصورة وتحويلها إلى SVG تقريبي
+// معالجة الصورة وتحويلها إلى SVG vector مبسطة
 function processImage(){
+    const MAX_SIZE = 800; // لتسريع العملية على الهواتف
+    let scale = Math.min(MAX_SIZE/img.naturalWidth, MAX_SIZE/img.naturalHeight, 1);
     const canvas = document.createElement("canvas");
+    canvas.width = img.naturalWidth * scale;
+    canvas.height = img.naturalHeight * scale;
     const ctx = canvas.getContext("2d");
-    canvas.width = img.naturalWidth;
-    canvas.height = img.naturalHeight;
-    ctx.drawImage(img,0,0);
+    ctx.drawImage(img,0,0,canvas.width,canvas.height);
 
     const dataURL = canvas.toDataURL("image/png");
 
-    // تحويل الصورة إلى SVG
+    // إعدادات أسرع + مبسطة للـVector
     ImageTracer.imageToSVG(dataURL, function(svgString){
         generatedSVG = svgString;
         svgOutput.innerHTML = svgString;
-        convertSVGtoJPEG(svgString);
-    }, {ltres:1, qtres:1, pathomit:8, roundcoords:1});
+        convertSVGtoJPEG(svgString, canvas.width, canvas.height);
+    }, {ltres:2, qtres:2, pathomit:20, roundcoords:1});
 }
 
-// تحويل SVG إلى JPEG للتحميل
-function convertSVGtoJPEG(svgString){
+// تحويل SVG إلى JPEG
+function convertSVGtoJPEG(svgString, width, height){
     const svgBlob = new Blob([svgString], {type:"image/svg+xml;charset=utf-8"});
     const url = URL.createObjectURL(svgBlob);
     const imgObj = new Image();
     imgObj.onload = function(){
         const canvas = document.createElement("canvas");
-        canvas.width = imgObj.width;
-        canvas.height = imgObj.height;
+        canvas.width = width;
+        canvas.height = height;
         const ctx = canvas.getContext("2d");
-        ctx.fillStyle = "white"; // خلفية بيضاء
-        ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.fillStyle = "white";
+        ctx.fillRect(0,0,width,height);
         ctx.drawImage(imgObj,0,0);
         jpegPreview.src = canvas.toDataURL("image/jpeg",1.0);
         URL.revokeObjectURL(url);
