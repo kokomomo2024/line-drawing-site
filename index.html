@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>رسم هندسي تقريبي</title>
+<title>تحويل الجسم إلى رسم هندسي تقريبي</title>
 <style>
 body { font-family: Arial; text-align:center; padding:20px; background:#f0f0f0; }
 #preview, #jpegPreview { max-width:90%; margin-top:20px; border:2px solid #ccc; }
@@ -13,7 +13,7 @@ canvas { display:none; }
 </style>
 </head>
 <body>
-<h2>تحويل أي جسم بالصورة إلى رسم هندسي تقريبي</h2>
+<h2>تحويل الجسم إلى رسم هندسي تقريبي</h2>
 
 <div class="box">
 <button onclick="document.getElementById('imageInput').click()">اختر صورة</button>
@@ -54,12 +54,12 @@ input.addEventListener("change", function(e){
 
 img.onload = function(){
     preview.src = img.src;
-    processImage();
+    setTimeout(processImage, 200); // يعطي وقت لتحميل الصورة
 }
 
-// معالجة الصورة وتحويلها إلى SVG vector مبسطة
+// معالجة الصورة وتحويلها إلى SVG vector دقيق
 function processImage(){
-    const MAX_SIZE = 800; // لتسريع العملية على الهواتف
+    const MAX_SIZE = 800; // لتسريع المعالجة على الهواتف
     let scale = Math.min(MAX_SIZE/img.naturalWidth, MAX_SIZE/img.naturalHeight, 1);
     const canvas = document.createElement("canvas");
     canvas.width = img.naturalWidth * scale;
@@ -69,12 +69,12 @@ function processImage(){
 
     const dataURL = canvas.toDataURL("image/png");
 
-    // إعدادات أسرع + مبسطة للـVector
+    // إعدادات دقيقة لتوليد خطوط واضحة
     ImageTracer.imageToSVG(dataURL, function(svgString){
         generatedSVG = svgString;
         svgOutput.innerHTML = svgString;
         convertSVGtoJPEG(svgString, canvas.width, canvas.height);
-    }, {ltres:2, qtres:2, pathomit:20, roundcoords:1});
+    }, {ltres:1, qtres:1, pathomit:0, roundcoords:1, scale:1, strokewidth:1});
 }
 
 // تحويل SVG إلى JPEG
@@ -87,7 +87,7 @@ function convertSVGtoJPEG(svgString, width, height){
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext("2d");
-        ctx.fillStyle = "white";
+        ctx.fillStyle = "white"; // خلفية بيضاء
         ctx.fillRect(0,0,width,height);
         ctx.drawImage(imgObj,0,0);
         jpegPreview.src = canvas.toDataURL("image/jpeg",1.0);
