@@ -3,143 +3,103 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Partial 2D Line Art Generator</title>
+<title>تحويل أي جزء بالصورة إلى رسم هندسي تقريبي</title>
 <style>
 body { font-family: Arial; text-align:center; padding:20px; background:#f0f0f0; }
-#preview, #output { max-width:90%; margin-top:20px; border:2px solid #ccc; cursor:crosshair; }
+#preview, #canvasPreview, #jpegPreview { max-width:90%; margin-top:20px; border:2px solid #ccc; }
 .box { background:#fff; padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.1); display:inline-block; }
 button { margin-top:15px; padding:10px 20px; font-size:16px; border:none; background:#007bff; color:white; border-radius:8px; cursor:pointer; }
 canvas { display:none; }
 </style>
 </head>
 <body>
-<h2>تحويل جزء من الصورة إلى رسم هندسي 2D</h2>
+<h2>تحويل أي جزء بالصورة إلى رسم هندسي تقريبي</h2>
+
 <div class="box">
-<!-- زر اختيار الصورة -->
-<button onclick="document.getElementById('imageInput').click()">اختر صورة من الهاتف</button>
+<button onclick="document.getElementById('imageInput').click()">اختر صورة</button>
 <input type="file" id="imageInput" accept="image/*" style="display:none;"><br>
 
-<!-- عرض الصورة -->
-<canvas id="canvas"></canvas>
 <img id="preview"><br>
 
-<h3>الرسم الناتج:</h3>
-<img id="output"><br>
+<h3>الرسم الهندسي الناتج (Vector تقريبي):</h3>
+<div id="svgOutput"></div><br>
 
-<button onclick="downloadResult()">تحميل الرسم الهندسي بصيغة JPEG</button>
+<h3>تحميل الرسم كصورة JPEG:</h3>
+<img id="jpegPreview"><br>
+
+<button onclick="downloadJPEG()">تحميل JPEG</button>
 </div>
+
+<!-- مكتبة ImageTracerJS -->
+<script src="https://cdn.jsdelivr.net/npm/imagetracerjs@1.2.9/imagetracer.min.js"></script>
 
 <script>
 const input = document.getElementById("imageInput");
 const preview = document.getElementById("preview");
-const output = document.getElementById("output");
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
+const svgOutput = document.getElementById("svgOutput");
+const jpegPreview = document.getElementById("jpegPreview");
+let img = new Image();
+let generatedSVG = "";
 
-let startX=0, startY=0, endX=0, endY=0, isDragging=false;
-
-// تحميل الصورة وعرضها
+// رفع الصورة وعرضها
 input.addEventListener("change", function(e){
     const file = e.target.files[0];
     if(!file) return;
     const reader = new FileReader();
     reader.onload = function(event){
-        preview.src = event.target.result;
+        img.src = event.target.result;
     }
     reader.readAsDataURL(file);
 });
 
-// رسم مستطيل لتحديد الجزء
-preview.addEventListener("mousedown", e => {
-    const rect = preview.getBoundingClientRect();
-    startX = e.clientX - rect.left;
-    startY = e.clientY - rect.top;
-    isDragging = true;
-});
-
-preview.addEventListener("mousemove", e => {
-    if(!isDragging) return;
-    const rect = preview.getBoundingClientRect();
-    endX = e.clientX - rect.left;
-    endY = e.clientY - rect.top;
-    drawSelection();
-});
-
-preview.addEventListener("mouseup", e => {
-    isDragging = false;
-    processSelectedArea();
-});
-
-// رسم المستطيل على الصورة للمعاينة
-function drawSelection(){
-    const tempCanvas = document.createElement("canvas");
-    const tempCtx = tempCanvas.getContext("2d");
-    tempCanvas.width = preview.naturalWidth;
-    tempCanvas.height = preview.naturalHeight;
-    tempCtx.drawImage(preview,0,0);
-    const x = Math.min(startX,endX) * (preview.naturalWidth/preview.width);
-    const y = Math.min(startY,endY) * (preview.naturalHeight/preview.height);
-    const w = Math.abs(endX-startX) * (preview.naturalWidth/preview.width);
-    const h = Math.abs(endY-startY) * (preview.naturalHeight/preview.height);
-    tempCtx.strokeStyle = "red";
-    tempCtx.lineWidth = 3;
-    tempCtx.strokeRect(x,y,w,h);
-    preview.src = tempCanvas.toDataURL();
+img.onload = function(){
+    preview.src = img.src;
+    processImage();
 }
 
-// معالجة الجزء المحدد
-function processSelectedArea(){
-    const x = Math.min(startX,endX) * (preview.naturalWidth/preview.width);
-    const y = Math.min(startY,endY) * (preview.naturalHeight/preview.height);
-    const w = Math.abs(endX-startX) * (preview.naturalWidth/preview.width);
-    const h = Math.abs(endY-startY) * (preview.naturalHeight/preview.height);
+// معالجة الصورة وتحويلها إلى SVG تقريبي
+function processImage(){
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    ctx.drawImage(img,0,0);
 
-    canvas.width = w;
-    canvas.height = h;
-    ctx.drawImage(preview, x, y, w, h, 0, 0, w, h);
+    const dataURL = canvas.toDataURL("image/png");
 
-    let imageData = ctx.getImageData(0,0,w,h);
-    let data = imageData.data;
-    const copy = new Uint8ClampedArray(data);
-
-    // تحويل الرمادي
-    for(let i=0;i<data.length;i+=4){
-        const avg = 0.3*data[i]+0.59*data[i+1]+0.11*data[i+2];
-        data[i]=data[i+1]=data[i+2]=avg;
-    }
-
-    // كشف الحواف Sobel
-    const threshold = 100;
-    for(let yy=1;yy<h-1;yy++){
-        for(let xx=1;xx<w-1;xx++){
-            const i = (yy*w+xx)*4;
-            const tl = copy[((yy-1)*w+(xx-1))*4];
-            const t  = copy[((yy-1)*w+xx)*4];
-            const tr = copy[((yy-1)*w+(xx+1))*4];
-            const l  = copy[(yy*w+(xx-1))*4];
-            const r  = copy[(yy*w+(xx+1))*4];
-            const bl = copy[((yy+1)*w+(xx-1))*4];
-            const b  = copy[((yy+1)*w+xx)*4];
-            const br = copy[((yy+1)*w+(xx+1))*4];
-
-            const gx = -tl - 2*l - bl + tr + 2*r + br;
-            const gy = -tl - 2*t - tr + bl + 2*b + br;
-            const g = Math.sqrt(gx*gx + gy*gy);
-            const v = g>threshold?0:255;
-            data[i]=data[i+1]=data[i+2]=v;
-        }
-    }
-
-    ctx.putImageData(imageData,0,0);
-    // حفظ النتيجة في <img>
-    output.src = canvas.toDataURL("image/jpeg", 1.0); // صيغة JPEG بجودة 100%
+    // تحويل الصورة إلى SVG
+    ImageTracer.imageToSVG(dataURL, function(svgString){
+        generatedSVG = svgString;
+        svgOutput.innerHTML = svgString;
+        convertSVGtoJPEG(svgString);
+    }, {ltres:1, qtres:1, pathomit:8, roundcoords:1});
 }
 
-// تحميل الصورة النهائية بصيغة JPEG
-function downloadResult(){
+// تحويل SVG إلى JPEG للتحميل
+function convertSVGtoJPEG(svgString){
+    const svgBlob = new Blob([svgString], {type:"image/svg+xml;charset=utf-8"});
+    const url = URL.createObjectURL(svgBlob);
+    const imgObj = new Image();
+    imgObj.onload = function(){
+        const canvas = document.createElement("canvas");
+        canvas.width = imgObj.width;
+        canvas.height = imgObj.height;
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "white"; // خلفية بيضاء
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.drawImage(imgObj,0,0);
+        jpegPreview.src = canvas.toDataURL("image/jpeg",1.0);
+        URL.revokeObjectURL(url);
+    }
+    imgObj.src = url;
+}
+
+// تحميل JPEG
+function downloadJPEG(){
+    if(!jpegPreview.src) return alert("انتظر حتى يتم توليد الصورة");
     const link = document.createElement("a");
-    link.download = "partial_2d_line_art.jpg";
-    link.href = output.src;
+    link.href = jpegPreview.src;
+    link.download = "geometric_part.jpg";
     link.click();
 }
 </script>
