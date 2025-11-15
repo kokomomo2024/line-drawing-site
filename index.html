@@ -1,56 +1,144 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Partial 2D Line Art Generator</title>
+<style>
+body { font-family: Arial; text-align:center; padding:20px; background:#f0f0f0; }
+#preview, #output { max-width:90%; margin-top:20px; border:2px solid #ccc; cursor:crosshair; }
+.box { background:#fff; padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.1); display:inline-block; }
+button { margin-top:15px; padding:10px 20px; font-size:16px; border:none; background:#007bff; color:white; border-radius:8px; cursor:pointer; }
+canvas { display:none; }
+</style>
+</head>
+<body>
+<h2>تحويل جزء من الصورة إلى رسم هندسي 2D</h2>
+<div class="box">
+<!-- زر اختيار الصورة -->
+<button onclick="document.getElementById('imageInput').click()">اختر صورة من الهاتف</button>
+<input type="file" id="imageInput" accept="image/*" style="display:none;"><br>
+
+<!-- عرض الصورة -->
+<canvas id="canvas"></canvas>
+<img id="preview"><br>
+
+<h3>الرسم الناتج:</h3>
+<img id="output"><br>
+
+<button onclick="downloadResult()">تحميل الرسم الهندسي بصيغة JPEG</button>
+</div>
+
+<script>
+const input = document.getElementById("imageInput");
+const preview = document.getElementById("preview");
+const output = document.getElementById("output");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+let startX=0, startY=0, endX=0, endY=0, isDragging=false;
+
+// تحميل الصورة وعرضها
+input.addEventListener("change", function(e){
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = function(event){
         preview.src = event.target.result;
     }
     reader.readAsDataURL(file);
 });
 
-preview.onload = function(){
-    canvas.width = preview.naturalWidth;
-    canvas.height = preview.naturalHeight;
-    ctx.drawImage(preview,0,0,canvas.width,canvas.height);
+// رسم مستطيل لتحديد الجزء
+preview.addEventListener("mousedown", e => {
+    const rect = preview.getBoundingClientRect();
+    startX = e.clientX - rect.left;
+    startY = e.clientY - rect.top;
+    isDragging = true;
+});
 
-    let imageData = ctx.getImageData(0,0,canvas.width,canvas.height);
+preview.addEventListener("mousemove", e => {
+    if(!isDragging) return;
+    const rect = preview.getBoundingClientRect();
+    endX = e.clientX - rect.left;
+    endY = e.clientY - rect.top;
+    drawSelection();
+});
+
+preview.addEventListener("mouseup", e => {
+    isDragging = false;
+    processSelectedArea();
+});
+
+// رسم المستطيل على الصورة للمعاينة
+function drawSelection(){
+    const tempCanvas = document.createElement("canvas");
+    const tempCtx = tempCanvas.getContext("2d");
+    tempCanvas.width = preview.naturalWidth;
+    tempCanvas.height = preview.naturalHeight;
+    tempCtx.drawImage(preview,0,0);
+    const x = Math.min(startX,endX) * (preview.naturalWidth/preview.width);
+    const y = Math.min(startY,endY) * (preview.naturalHeight/preview.height);
+    const w = Math.abs(endX-startX) * (preview.naturalWidth/preview.width);
+    const h = Math.abs(endY-startY) * (preview.naturalHeight/preview.height);
+    tempCtx.strokeStyle = "red";
+    tempCtx.lineWidth = 3;
+    tempCtx.strokeRect(x,y,w,h);
+    preview.src = tempCanvas.toDataURL();
+}
+
+// معالجة الجزء المحدد
+function processSelectedArea(){
+    const x = Math.min(startX,endX) * (preview.naturalWidth/preview.width);
+    const y = Math.min(startY,endY) * (preview.naturalHeight/preview.height);
+    const w = Math.abs(endX-startX) * (preview.naturalWidth/preview.width);
+    const h = Math.abs(endY-startY) * (preview.naturalHeight/preview.height);
+
+    canvas.width = w;
+    canvas.height = h;
+    ctx.drawImage(preview, x, y, w, h, 0, 0, w, h);
+
+    let imageData = ctx.getImageData(0,0,w,h);
     let data = imageData.data;
     const copy = new Uint8ClampedArray(data);
-    const w = canvas.width;
-    const h = canvas.height;
 
-    // تحويل الصورة إلى رمادي
+    // تحويل الرمادي
     for(let i=0;i<data.length;i+=4){
         const avg = 0.3*data[i]+0.59*data[i+1]+0.11*data[i+2];
         data[i]=data[i+1]=data[i+2]=avg;
     }
 
-    // كشف الحواف Sobel 2D
-    const threshold = 100; // يمكن تعديلها للتحكم في قوة الخطوط
-    for(let y=1;y<h-1;y++){
-        for(let x=1;x<w-1;x++){
-            const i = (y*w+x)*4;
-
-            const tl = copy[((y-1)*w+(x-1))*4];
-            const t  = copy[((y-1)*w+x)*4];
-            const tr = copy[((y-1)*w+(x+1))*4];
-            const l  = copy[(y*w+(x-1))*4];
-            const r  = copy[(y*w+(x+1))*4];
-            const bl = copy[((y+1)*w+(x-1))*4];
-            const b  = copy[((y+1)*w+x)*4];
-            const br = copy[((y+1)*w+(x+1))*4];
+    // كشف الحواف Sobel
+    const threshold = 100;
+    for(let yy=1;yy<h-1;yy++){
+        for(let xx=1;xx<w-1;xx++){
+            const i = (yy*w+xx)*4;
+            const tl = copy[((yy-1)*w+(xx-1))*4];
+            const t  = copy[((yy-1)*w+xx)*4];
+            const tr = copy[((yy-1)*w+(xx+1))*4];
+            const l  = copy[(yy*w+(xx-1))*4];
+            const r  = copy[(yy*w+(xx+1))*4];
+            const bl = copy[((yy+1)*w+(xx-1))*4];
+            const b  = copy[((yy+1)*w+xx)*4];
+            const br = copy[((yy+1)*w+(xx+1))*4];
 
             const gx = -tl - 2*l - bl + tr + 2*r + br;
             const gy = -tl - 2*t - tr + bl + 2*b + br;
             const g = Math.sqrt(gx*gx + gy*gy);
-
-            const v = g > threshold ? 0 : 255; // أسود على أبيض
+            const v = g>threshold?0:255;
             data[i]=data[i+1]=data[i+2]=v;
         }
     }
 
     ctx.putImageData(imageData,0,0);
-    output.src = canvas.toDataURL();
+    // حفظ النتيجة في <img>
+    output.src = canvas.toDataURL("image/jpeg", 1.0); // صيغة JPEG بجودة 100%
 }
 
+// تحميل الصورة النهائية بصيغة JPEG
 function downloadResult(){
     const link = document.createElement("a");
-    link.download = "2d_line_art.png";
+    link.download = "partial_2d_line_art.jpg";
     link.href = output.src;
     link.click();
 }
