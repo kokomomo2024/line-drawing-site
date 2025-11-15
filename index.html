@@ -3,77 +3,175 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>محاذاة الصورة بدون أي تأثيرات</title>
+<title>Engineering Generator</title>
+
 <style>
-body { font-family: Arial; text-align:center; padding:20px; background:#f0f0f0; }
-#preview, #alignedPreview { max-width:90%; margin-top:20px; border:2px solid #ccc; border-radius:10px; }
-.box { background:#fff; padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.1); display:inline-block; }
-button { margin-top:15px; padding:12px 25px; font-size:17px; border:none; background:#007bff; color:white; border-radius:10px; cursor:pointer; }
-canvas { display:none; }
+body {
+    font-family: Arial;
+    text-align:center;
+    background:#e6e6e6;
+    padding:20px;
+}
+
+h1 {
+    font-size:32px;
+    font-weight:bold;
+    background: linear-gradient(45deg,#ff0055,#ff8800,#007bff);
+    -webkit-background-clip: text;
+    color: transparent;
+    margin-bottom:25px;
+}
+
+.box {
+    background:white;
+    padding:20px;
+    border-radius:15px;
+    box-shadow:0 2px 15px rgba(0,0,0,0.15);
+    display:inline-block;
+    width:90%;
+    max-width:900px;
+}
+
+button {
+    margin-top:15px;
+    padding:12px 25px;
+    font-size:18px;
+    border:none;
+    background:#007bff;
+    color:white;
+    border-radius:10px;
+    cursor:pointer;
+}
+
+img {
+    max-width:90%;
+    border:2px solid #ccc;
+    border-radius:10px;
+    margin-top:15px;
+}
+
+canvas {
+    display:none;
+}
 </style>
 </head>
+
 <body>
-<h2>محاذاة الصورة بدون أي تأثيرات</h2>
+
+<h1>PRODUCT BY MOHAMED ASHRAF</h1>
 
 <div class="box">
-<button onclick="document.getElementById('imageInput').click()">اختر صورة من الهاتف</button>
-<input type="file" id="imageInput" accept="image/*" style="display:none;"><br>
+    <button onclick="document.getElementById('imageInput').click()">اختر صورة القطعة</button>
+    <input type="file" id="imageInput" accept="image/*" style="display:none">
 
-<h3>الصورة الأصلية:</h3>
-<img id="preview">
+    <h3>الصورة الأصلية:</h3>
+    <img id="preview">
 
-<h3>الصورة بعد المحاذاة (بدون تغيير الألوان):</h3>
-<img id="alignedPreview"><br>
+    <h3>الرسم الهندسي + الأبعاد:</h3>
+    <img id="finalOutput">
 
-<button onclick="downloadAlignedJPEG()">تحميل الصورة كـ JPEG</button>
+    <br>
+    <button onclick="downloadJPEG()">تحميل الرسم كـ JPEG</button>
 </div>
 
 <script>
 const input = document.getElementById("imageInput");
 const preview = document.getElementById("preview");
-const alignedPreview = document.getElementById("alignedPreview");
+const finalOutput = document.getElementById("finalOutput");
 let img = new Image();
 
 input.addEventListener("change", function(e){
     const file = e.target.files[0];
     if(!file) return;
     const reader = new FileReader();
-    reader.onload = function(event){
-        img.src = event.target.result;
+    reader.onload = function(ev){
+        img.src = ev.target.result;
     }
     reader.readAsDataURL(file);
 });
 
-// بعد تحميل الصورة
 img.onload = function(){
     preview.src = img.src;
-    alignImage();
+    setTimeout(createEngineeringDrawing, 100);
 }
 
-// محاذاة الصورة (توسيط + تغيير حجم إذا ضروري)
-function alignImage(){
-    const MAX_SIZE = 900; // الحجم الأقصى للعرض
-    let scale = Math.min(MAX_SIZE / img.naturalWidth, MAX_SIZE / img.naturalHeight, 1);
+function createEngineeringDrawing(){
+    const W = img.naturalWidth;
+    const H = img.naturalHeight;
 
     const canvas = document.createElement("canvas");
-    canvas.width = img.naturalWidth * scale;
-    canvas.height = img.naturalHeight * scale;
-
+    canvas.width = W;
+    canvas.height = H;
     const ctx = canvas.getContext("2d");
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-    // الصورة الملونة بعد المحاذاة
-    alignedPreview.src = canvas.toDataURL("image/jpeg", 1.0);
+    // خلفية بيضاء
+    ctx.fillStyle = "white";
+    ctx.fillRect(0,0,W,H);
+
+    // رسم الجسم الأصلي
+    ctx.drawImage(img, 0, 0, W, H);
+
+    // *** رسم أبعاد هندسية بسيطة ***
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = 3;
+
+    // خط أفقي علوي للبعد
+    ctx.beginPath();
+    ctx.moveTo(50, 50);
+    ctx.lineTo(W-50, 50);
+    ctx.stroke();
+
+    // خطين عموديين نازلين
+    ctx.beginPath();
+    ctx.moveTo(50, 50);
+    ctx.lineTo(50, 110);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(W-50, 50);
+    ctx.lineTo(W-50, 110);
+    ctx.stroke();
+
+    // كتابة البعد
+    ctx.font = "bold 40px Arial";
+    ctx.fillStyle = "black";
+    ctx.textAlign = "center";
+    ctx.fillText("WIDTH", W/2, 100);
+
+    // *** خط طول جانبي ***
+    ctx.beginPath();
+    ctx.moveTo(W-120, 150);
+    ctx.lineTo(W-120, H-150);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(W-120, 150);
+    ctx.lineTo(W-60, 150);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(W-120, H-150);
+    ctx.lineTo(W-60, H-150);
+    ctx.stroke();
+
+    ctx.save();
+    ctx.translate(W-70, H/2);
+    ctx.rotate(-Math.PI/2);
+    ctx.textAlign="center";
+    ctx.font = "bold 40px Arial";
+    ctx.fillText("HEIGHT", 0, 0);
+    ctx.restore();
+
+    finalOutput.src = canvas.toDataURL("image/jpeg", 1.0);
 }
 
-// تحميل الصورة
-function downloadAlignedJPEG(){
-    if(!alignedPreview.src) return alert("الصورة لم تُجهز بعد!");
+function downloadJPEG(){
     const link = document.createElement("a");
-    link.href = alignedPreview.src;
-    link.download = "aligned_image.jpg";
+    link.href = finalOutput.src;
+    link.download = "engineering_drawing.jpg";
     link.click();
 }
 </script>
+
 </body>
 </html>
