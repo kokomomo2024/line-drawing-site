@@ -1,120 +1,86 @@
 <!DOCTYPE html>
 <html lang="ar">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1.0" />
-<title>Product by Mohamed Ashraf — Engineering Sketch Tool</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Isometric Engineering Sketch — PRODUCT BY MOHAMED ASHRAF</title>
 <style>
-  :root{--accent:#007bff;--bg:#f4f6fb}
-  body{font-family:Arial,system-ui; background:var(--bg); margin:0; padding:18px; color:#111; text-align:center}
-  h1{margin:0 0 14px; font-size:30px; line-height:1; background:linear-gradient(90deg,#ff0055,#ff8800,#007bff); -webkit-background-clip:text; color:transparent}
-  .card{max-width:1000px;margin:0 auto;background:#fff;padding:16px;border-radius:14px;box-shadow:0 6px 24px rgba(20,30,60,0.08)}
-  .controls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:10px}
-  .controls button, .controls select {padding:10px 12px;border-radius:8px;border:1px solid #ddd;background:#fff;cursor:pointer}
-  .controls button.active{background:var(--accent);color:#fff;border-color:var(--accent)}
-  #canvasWrap{position:relative;border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;background:#fff}
+  :root{--accent:#007bff}
+  body{font-family:Arial,Helvetica,sans-serif;background:#f3f6fb;margin:12px;color:#111;text-align:center}
+  h1{font-size:26px;margin:6px 0 12px;background:linear-gradient(90deg,#ff0055,#ff8800,#007bff);-webkit-background-clip:text;color:transparent}
+  .card{max-width:980px;margin:0 auto;background:#fff;padding:14px;border-radius:12px;box-shadow:0 8px 30px rgba(20,30,60,.06)}
+  .row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:8px}
+  label.fileBtn{padding:10px 14px;border-radius:8px;border:1px dashed #bbb;background:#fafafa;cursor:pointer}
+  button, select{padding:8px 10px;border-radius:8px;border:1px solid #ccc;background:#fff;cursor:pointer}
+  button.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+  #wrap{position:relative;border:1px solid #ddd;border-radius:8px;overflow:hidden;background:#fff;display:inline-block}
   canvas{display:block;max-width:100%}
   #bgCanvas{background:#fff}
-  #drawCanvas{position:absolute;left:0;top:0;z-index:10;touch-action:none}
-  .toolInfo{font-size:13px;color:#666;margin-top:8px}
-  .bottomActions{display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap}
-  .bigBtn{padding:12px 18px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-weight:600;cursor:pointer}
-  .smallBtn{padding:8px 10px;border-radius:8px;border:1px solid #ddd;background:#fff;cursor:pointer}
-  input[type=file]{display:none}
-  label.fileBtn{padding:10px 14px;border-radius:8px;border:1px dashed #bbb;background:#fafafa;cursor:pointer}
-  .note{font-size:13px;color:#444;margin-top:8px}
-  .dimInput{width:90px;padding:6px;border-radius:6px;border:1px solid #ccc}
-  .footer{font-size:12px;color:#666;margin-top:12px}
+  #drawCanvas{position:absolute;left:0;top:0;z-index:5;touch-action:none}
+  .tools{font-size:13px;color:#333}
+  .footer{font-size:12px;color:#666;margin-top:6px}
 </style>
 </head>
 <body>
+  <h1>PRODUCT BY MOHAMED ASHRAF</h1>
 
-<h1>PRODUCT BY MOHAMED ASHRAF</h1>
+  <div class="card">
+    <div class="row">
+      <label class="fileBtn">اختر صورة<input id="fileInput" type="file" accept="image/*" style="display:none"></label>
+      <button id="btnSuggestion">اقتراح الحواف</button>
+      <button data-tool="iso_line" class="toolBtn active">خط إيزومتري</button>
+      <button data-tool="free_line" class="toolBtn">خط حر</button>
+      <button data-tool="circle" class="toolBtn">دائرة</button>
+      <button data-tool="arc" class="toolBtn">قوس</button>
+      <button data-tool="dim" class="toolBtn">بعد</button>
+      <select id="strokeWidth"><option value="2">سمك 2</option><option value="3" selected>سمك 3</option><option value="4">سمك 4</option></select>
+      <input id="colorPicker" type="color" value="#000000">
+      <button id="undoBtn">تراجع</button>
+      <button id="clearBtn">مسح الكل</button>
+    </div>
 
-<div class="card">
-  <div style="margin-bottom:10px">
-    <label class="fileBtn" for="fileInput">اختر صورة القطعة من الهاتف / الكمبيوتر</label>
-    <input id="fileInput" type="file" accept="image/*">
+    <div id="wrap" style="width:800px;height:520px;">
+      <canvas id="bgCanvas"></canvas>
+      <canvas id="drawCanvas"></canvas>
+      <canvas id="overlayCanvas" style="position:absolute;left:0;top:0;z-index:6;pointer-events:none;"></canvas>
+    </div>
+
+    <div style="margin-top:10px">
+      <button id="exportBtn" style="padding:10px 16px;background:var(--accent);color:#fff;border:none;border-radius:8px">تصدير JPEG</button>
+    </div>
+
+    <div class="footer">ملاحظة: استخدم "اقتراح الحواف" لمساعدتك على تتبع الشكل. استخدم أداة "خط إيزومتري" لرسم خطوط متوازية بإتجاهات 30°/150°/عمودي ليظهر الشكل إيزومتريك.</div>
   </div>
 
-  <div class="controls" aria-hidden>
-    <button id="tool_select" class="smallBtn active" data-tool="select">تحديد</button>
-    <button id="tool_line" class="smallBtn" data-tool="line">خط</button>
-    <button id="tool_rect" class="smallBtn" data-tool="rect">مربع/مستطيل</button>
-    <button id="tool_circle" class="smallBtn" data-tool="circle">دائرة</button>
-    <button id="tool_dim" class="smallBtn" data-tool="dim">بعد</button>
-    <button id="tool_erase" class="smallBtn" data-tool="erase">مسح</button>
-
-    <select id="strokeWidth" title="سمك الخط">
-      <option value="2">سمك: 2</option>
-      <option value="3" selected>سمك: 3</option>
-      <option value="4">سمك: 4</option>
-      <option value="6">سمك: 6</option>
-    </select>
-
-    <input id="colorPicker" type="color" value="#000000" title="لون الخط">
-
-  </div>
-
-  <div id="canvasWrap" style="height:500px;display:flex;align-items:center;justify-content:center">
-    <canvas id="bgCanvas"></canvas>
-    <canvas id="drawCanvas"></canvas>
-  </div>
-
-  <div class="toolInfo">اختر أداة ثم ارسم فوق الصورة. استخدم أداة "بعد" لوضع أبعاد نصّية يدوية. على الهاتف استخدم اللمس.</div>
-
-  <div class="bottomActions">
-    <button id="mergeBtn" class="bigBtn">تصدير كصورة JPEG مع الأبعاد</button>
-    <button id="clearBtn" class="smallBtn">تفريغ الرسم</button>
-    <button id="fitBtn" class="smallBtn">محاذاة تلقائية (تكبير/تصغير)</button>
-  </div>
-
-  <div style="margin-top:12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
-    <div>أدخل قيمة البُعد (اختياري): <input id="dimValue" class="dimInput" placeholder="مثلاً 50 mm"></div>
-  </div>
-
-  <div class="note">ملاحظة: بعد الرسم يمكنك تعديل قيمة البعد التي تظهر بواسطة حقل "أدخل قيمة البُعد" قبل رسم البُعد، أو تعديل النص بعد الرسم بالنقر عليه (ميزة تعديل لاحقة بسيطة).</div>
-
-  <div class="footer">نسخة تجريبية — لتحويل أكثر تلقائية (استخراج دوائر وقياسات تلقائياً) مطلوب نظام متقدم (AI/CAD).</div>
-</div>
-
+<script src="https://docs.opencv.org/4.5.5/opencv.js" onerror="console.warn('opencv failed to load')"></script>
 <script>
-/* ====== إعداد العناصر ====== */
+/* ===== عناصر ===== */
 const fileInput = document.getElementById('fileInput');
 const bgCanvas = document.getElementById('bgCanvas');
 const drawCanvas = document.getElementById('drawCanvas');
-const canvasWrap = document.getElementById('canvasWrap');
-const bgCtx = bgCanvas.getContext('2d');
-const drawCtx = drawCanvas.getContext('2d');
-
-const tools = ['select','line','rect','circle','dim','erase'];
-let currentTool = 'select';
-const toolButtons = document.querySelectorAll('.controls button');
+const overlayCanvas = document.getElementById('overlayCanvas');
+const wrap = document.getElementById('wrap');
+const btnSuggestion = document.getElementById('btnSuggestion');
+const toolBtns = document.querySelectorAll('.toolBtn');
 const strokeWidthEl = document.getElementById('strokeWidth');
 const colorPicker = document.getElementById('colorPicker');
-const mergeBtn = document.getElementById('mergeBtn');
+const undoBtn = document.getElementById('undoBtn');
 const clearBtn = document.getElementById('clearBtn');
-const fitBtn = document.getElementById('fitBtn');
-const dimValueInput = document.getElementById('dimValue');
+const exportBtn = document.getElementById('exportBtn');
+
+const bgCtx = bgCanvas.getContext('2d');
+const drawCtx = drawCanvas.getContext('2d');
+const oCtx = overlayCanvas.getContext('2d');
 
 let img = new Image();
 let scale = 1;
-let offsetX = 0, offsetY = 0;
+let shapes = []; // مخزن الأشكال المرسومة
 
-let drawing = false;
-let startX=0, startY=0;
-let shapes = []; // objects: {type, x,y,w,h,x2,y2,color,width,text?}
+let currentTool = 'iso_line';
+let drawing=false, sx=0, sy=0;
+let tempShape = null;
 
-/* ====== أزرار الأدوات ====== */
-toolButtons.forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    toolButtons.forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-    currentTool = btn.dataset.tool;
-  });
-});
-
-/* ====== تحميل الصورة وعرضها مع محاذاة تلقائية ====== */
+/* ===== تحميل الصورة وتهيئة القماش ===== */
 fileInput.addEventListener('change', e=>{
   const f = e.target.files[0];
   if(!f) return;
@@ -122,289 +88,214 @@ fileInput.addEventListener('change', e=>{
   reader.onload = ev=>{
     img = new Image();
     img.onload = ()=>{
-      fitImageOnCanvas();
-      redrawAll();
+      fitImage();
+      clearAll();
+      drawBackground();
     };
     img.src = ev.target.result;
   };
   reader.readAsDataURL(f);
 });
 
-function fitImageOnCanvas(){
-  const maxW = Math.min(900, window.innerWidth - 60);
-  const maxH = Math.min(700, window.innerHeight - 160);
-  // حساب مقياس مناسب
+function fitImage(){
+  const maxW = Math.min(900, window.innerWidth - 40);
+  const maxH = Math.min(700, window.innerHeight - 180);
   scale = Math.min(maxW / img.naturalWidth, maxH / img.naturalHeight, 1);
   const W = Math.round(img.naturalWidth * scale);
   const H = Math.round(img.naturalHeight * scale);
-  bgCanvas.width = drawCanvas.width = W;
-  bgCanvas.height = drawCanvas.height = H;
-  canvasWrap.style.width = W + 'px';
-  canvasWrap.style.height = H + 'px';
-  offsetX = (canvasWrap.clientWidth - W)/2;
-  offsetY = (canvasWrap.clientHeight - H)/2;
-  // رسم الصورة الأساسية
+  [bgCanvas, drawCanvas, overlayCanvas].forEach(c=>{
+    c.width = W; c.height = H; c.style.width = W+'px'; c.style.height = H+'px';
+  });
+  wrap.style.width = W+'px'; wrap.style.height = H+'px';
+}
+
+function drawBackground(){
   bgCtx.clearRect(0,0,bgCanvas.width,bgCanvas.height);
   bgCtx.fillStyle = '#fff';
   bgCtx.fillRect(0,0,bgCanvas.width,bgCanvas.height);
-  bgCtx.drawImage(img,0,0,W,H);
+  bgCtx.drawImage(img,0,0,bgCanvas.width,bgCanvas.height);
 }
 
-/* ====== رسم وتخزين الأشكال ====== */
-function redrawAll(){
-  // مسح الرسم
+/* ===== أدوات الرسم ===== */
+toolBtns.forEach(b=>{
+  b.addEventListener('click', ()=>{
+    toolBtns.forEach(bb=>bb.classList.remove('active'));
+    b.classList.add('active');
+    currentTool = b.dataset.tool;
+  });
+});
+
+function clearAll(){ shapes=[]; redraw(); oCtx.clearRect(0,0,overlayCanvas.width,overlayCanvas.height); }
+
+clearBtn.addEventListener('click', ()=>{ if(confirm('مسح كل الرسومات؟')) clearAll(); });
+undoBtn.addEventListener('click', ()=>{ shapes.pop(); redraw(); });
+
+/* ===== مساعد الاقتراح (Canny) ===== */
+btnSuggestion.addEventListener('click', async ()=>{
+  if(!img.src){ alert('اختر صورة أولاً'); return; }
+  btnSuggestion.disabled = true;
+  btnSuggestion.textContent = 'جاري إنشاء الاقتراح...';
+  // استخدام opencv.js إن كانت متوفرة
+  if(typeof cv === 'undefined'){ alert('opencv.js لم يتم تحميله - لا تتوفر خاصية الاقتراح'); btnSuggestion.disabled=false; btnSuggestion.textContent='اقتراح الحواف'; return; }
+  try{
+    // دالة صغيرة لعمل Canny
+    const src = cv.imread(bgCanvas);
+    let gray = new cv.Mat();
+    cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
+    let blurred = new cv.Mat();
+    cv.GaussianBlur(gray, blurred, new cv.Size(5,5), 0);
+    let edges = new cv.Mat();
+    cv.Canny(blurred, edges, 60, 150);
+    // رسم edges على overlayCanvas
+    oCtx.clearRect(0,0,overlayCanvas.width,overlayCanvas.height);
+    oCtx.strokeStyle = 'rgba(255,0,0,0.7)';
+    oCtx.lineWidth = 1;
+    for(let y=0;y<edges.rows;y++){
+      for(let x=0;x<edges.cols;x++){
+        if(edges.ucharPtr(y,x)[0] > 0){
+          oCtx.fillStyle = 'rgba(255,0,0,0.12)';
+          oCtx.fillRect(x,y,1,1);
+        }
+      }
+    }
+    src.delete(); gray.delete(); blurred.delete(); edges.delete();
+  }catch(err){
+    console.error(err);
+    alert('حدث خطأ في معالجة الاقتراح');
+  } finally{
+    btnSuggestion.disabled=false;
+    btnSuggestion.textContent='اقتراح الحواف';
+  }
+});
+
+/* ===== رسم تفاعلي (دعم لمس وفأرة) ===== */
+function getPos(e){
+  const rect = drawCanvas.getBoundingClientRect();
+  let clientX, clientY;
+  if(e.touches && e.touches[0]){ clientX = e.touches[0].clientX; clientY = e.touches[0].clientY; }
+  else { clientX = e.clientX; clientY = e.clientY; }
+  return {x: Math.round(clientX - rect.left), y: Math.round(clientY - rect.top)};
+}
+
+drawCanvas.addEventListener('pointerdown', e=>{
+  if(!img.src) return;
+  drawing = true;
+  const p = getPos(e);
+  sx = p.x; sy = p.y;
+});
+
+drawCanvas.addEventListener('pointermove', e=>{
+  if(!drawing) return;
+  const p = getPos(e);
+  // رسم معاينة مؤقتة
+  redraw(); // يمسح الرسم المؤقت
+  drawCtx.lineWidth = parseInt(strokeWidthEl.value);
+  drawCtx.strokeStyle = colorPicker.value;
+  drawCtx.fillStyle = colorPicker.value;
+  if(currentTool === 'iso_line'){
+    // حساب النقطة المقابلة ملتزمة بزوايا إيزومترية: نوفر snapping لثلاث اتجاهات (0°, +30°, -30°)
+    // سنحوّل النقطة النهائية إلى أقرب اتجاه بالنسبة للبداية
+    const dx = p.x - sx, dy = p.y - sy;
+    const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+    // تسطيح الزوايا إلى 0, 30, -30 (تقريب)
+    const candidates = [0,30,-30];
+    let best = candidates.reduce((a,b)=>{
+      return (Math.abs(((angle - a+180)%360)-180) < Math.abs(((angle - b+180)%360)-180))?a:b;
+    });
+    // نحسب الطول
+    const len = Math.hypot(dx,dy);
+    const rad = best * Math.PI /180;
+    const nx = Math.round(sx + Math.cos(rad)*len);
+    const ny = Math.round(sy + Math.sin(rad)*len);
+    drawCtx.beginPath(); drawCtx.moveTo(sx,sy); drawCtx.lineTo(nx,ny); drawCtx.stroke();
+    tempShape = {type:'line', x:sx,y:sy,x2:nx,y2:ny,color:colorPicker.value,width:parseInt(strokeWidthEl.value)};
+  } else if(currentTool === 'free_line'){
+    drawCtx.beginPath(); drawCtx.moveTo(sx,sy); drawCtx.lineTo(p.x,p.y); drawCtx.stroke();
+    tempShape = {type:'line', x:sx,y:sy,x2:p.x,y2:p.y,color:colorPicker.value,width:parseInt(strokeWidthEl.value)};
+  } else if(currentTool === 'circle'){
+    const r = Math.hypot(p.x - sx, p.y - sy);
+    drawCtx.beginPath(); drawCtx.arc(sx,sy,r,0,Math.PI*2); drawCtx.stroke();
+    tempShape = {type:'circle', x:sx,y:sy,r:Math.round(r),color:colorPicker.value,width:parseInt(strokeWidthEl.value)};
+  } else if(currentTool === 'arc'){
+    // رسم قوس بسيط (نصف دائرة باتجاه السحب)
+    const r = Math.hypot(p.x - sx, p.y - sy);
+    const startAng = Math.atan2(0-0,1-0);
+    drawCtx.beginPath(); drawCtx.arc(sx,sy,r,0,Math.PI); drawCtx.stroke();
+    tempShape = {type:'arc', x:sx,y:sy,r:Math.round(r),start:0,end:Math.PI,color:colorPicker.value,width:parseInt(strokeWidthEl.value)};
+  } else if(currentTool === 'dim'){
+    drawCtx.beginPath(); drawCtx.moveTo(sx,sy); drawCtx.lineTo(p.x,p.y); drawCtx.stroke();
+    drawCtx.font = "bold 14px Arial"; drawCtx.fillStyle = colorPicker.value;
+    drawCtx.textAlign = "center";
+    drawCtx.fillText(document.getElementById('dimValue') ? document.getElementById('dimValue').value || '' : '', (sx+p.x)/2, (sy+p.y)/2 - 8);
+    tempShape = {type:'dim', x:sx,y:sy,x2:p.x,y2:p.y,text: document.getElementById('dimValue') ? document.getElementById('dimValue').value || '' : '', color:colorPicker.value,width:parseInt(strokeWidthEl.value)};
+  }
+});
+
+drawCanvas.addEventListener('pointerup', e=>{
+  if(!drawing) return;
+  drawing=false;
+  if(tempShape){ shapes.push(tempShape); tempShape = null; redraw(); }
+});
+
+/* ===== رسم كل الأشكال ===== */
+function redraw(){
   drawCtx.clearRect(0,0,drawCanvas.width,drawCanvas.height);
-  // رسم كل الأشكال
   shapes.forEach(s=>{
     drawCtx.lineWidth = s.width || 3;
     drawCtx.strokeStyle = s.color || '#000';
     drawCtx.fillStyle = s.color || '#000';
     if(s.type==='line'){
-      drawCtx.beginPath();
-      drawCtx.moveTo(s.x,s.y);
-      drawCtx.lineTo(s.x2,s.y2);
-      drawCtx.stroke();
-    } else if(s.type==='rect'){
-      drawCtx.strokeRect(s.x,s.y,s.w,s.h);
+      drawCtx.beginPath(); drawCtx.moveTo(s.x,s.y); drawCtx.lineTo(s.x2,s.y2); drawCtx.stroke();
     } else if(s.type==='circle'){
-      drawCtx.beginPath();
-      drawCtx.arc(s.x, s.y, s.r, 0, Math.PI*2);
-      drawCtx.stroke();
+      drawCtx.beginPath(); drawCtx.arc(s.x,s.y,s.r,0,Math.PI*2); drawCtx.stroke();
+    } else if(s.type==='arc'){
+      drawCtx.beginPath(); drawCtx.arc(s.x,s.y,s.r,s.start||0,s.end||Math.PI); drawCtx.stroke();
     } else if(s.type==='dim'){
-      // draw dimension with text
-      drawCtx.beginPath();
-      drawCtx.moveTo(s.x,s.y);
-      drawCtx.lineTo(s.x2,s.y2);
-      drawCtx.stroke();
-      // arrows
-      drawCtx.beginPath();
-      drawCtx.moveTo(s.x,s.y);
-      drawCtx.lineTo(s.x+8, s.y+8);
-      drawCtx.moveTo(s.x,s.y);
-      drawCtx.lineTo(s.x+8, s.y-8);
-      drawCtx.stroke();
-      drawCtx.beginPath();
-      drawCtx.moveTo(s.x2,s.y2);
-      drawCtx.lineTo(s.x2-8, s.y2+8);
-      drawCtx.moveTo(s.x2,s.y2);
-      drawCtx.lineTo(s.x2-8, s.y2-8);
-      drawCtx.stroke();
-      // text
-      drawCtx.font = "bold 16px Arial";
-      drawCtx.fillStyle = s.color || '#000';
-      drawCtx.textAlign = "center";
-      drawCtx.fillText(s.text || '', (s.x+s.x2)/2, (s.y+s.y2)/2 - 8);
+      drawCtx.beginPath(); drawCtx.moveTo(s.x,s.y); drawCtx.lineTo(s.x2,s.y2); drawCtx.stroke();
+      drawCtx.font = "bold 14px Arial"; drawCtx.fillStyle = s.color || '#000';
+      drawCtx.textAlign = "center"; drawCtx.fillText(s.text||'', (s.x+s.x2)/2, (s.y+s.y2)/2 - 8);
     }
   });
 }
 
-/* ====== أحداث الفأرة واللمس للرسم ====== */
-function getPointerPos(e){
-  const rect = drawCanvas.getBoundingClientRect();
-  let clientX, clientY;
-  if(e.touches && e.touches[0]) { clientX = e.touches[0].clientX; clientY = e.touches[0].clientY; }
-  else { clientX = e.clientX; clientY = e.clientY; }
-  const x = Math.round((clientX - rect.left));
-  const y = Math.round((clientY - rect.top));
-  return {x,y};
-}
-
-function onPointerDown(e){
-  if(!img.src) return;
-  e.preventDefault();
-  drawing = true;
-  const p = getPointerPos(e);
-  startX = p.x; startY = p.y;
-  if(currentTool==='erase'){
-    // مسح قريب من النقطة
-    shapes = shapes.filter(s=>{
-      // keep shapes far away; simple distance check center
-      const cx = s.x || ((s.x+s.x2)/2);
-      const cy = s.y || ((s.y+s.y2)/2);
-      const d = Math.hypot(cx - startX, cy - startY);
-      return d > 40;
-    });
-    redrawAll();
-  }
-}
-
-function onPointerMove(e){
-  if(!drawing) return;
-  const p = getPointerPos(e);
-  const w = parseInt(strokeWidthEl.value || 3);
-  const color = colorPicker.value || '#000';
-  // show preview by drawing temporary overlay
-  redrawAll();
-  drawCtx.lineWidth = w;
-  drawCtx.strokeStyle = color;
-  drawCtx.fillStyle = color;
-  if(currentTool==='line'){
-    drawCtx.beginPath();
-    drawCtx.moveTo(startX, startY);
-    drawCtx.lineTo(p.x, p.y);
-    drawCtx.stroke();
-  } else if(currentTool==='rect'){
-    const rx = Math.min(startX, p.x);
-    const ry = Math.min(startY, p.y);
-    const rw = Math.abs(p.x - startX);
-    const rh = Math.abs(p.y - startY);
-    drawCtx.strokeRect(rx, ry, rw, rh);
-  } else if(currentTool==='circle'){
-    const r = Math.hypot(p.x - startX, p.y - startY);
-    drawCtx.beginPath();
-    drawCtx.arc(startX, startY, r, 0, Math.PI*2);
-    drawCtx.stroke();
-  } else if(currentTool==='dim'){
-    drawCtx.beginPath();
-    drawCtx.moveTo(startX, startY);
-    drawCtx.lineTo(p.x, p.y);
-    drawCtx.stroke();
-    drawCtx.font = "bold 16px Arial";
-    drawCtx.fillStyle = color;
-    drawCtx.textAlign = "center";
-    drawCtx.fillText(dimValueInput.value || '', (startX + p.x)/2, (startY + p.y)/2 - 8);
-  }
-}
-
-function onPointerUp(e){
-  if(!drawing) return;
-  drawing = false;
-  const p = getPointerPos(e);
-  const w = parseInt(strokeWidthEl.value || 3);
-  const color = colorPicker.value || '#000';
-  if(currentTool==='line'){
-    shapes.push({type:'line', x:startX, y:startY, x2:p.x, y2:p.y, color, width:w});
-  } else if(currentTool==='rect'){
-    const rx = Math.min(startX, p.x);
-    const ry = Math.min(startY, p.y);
-    const rw = Math.abs(p.x - startX);
-    const rh = Math.abs(p.y - startY);
-    shapes.push({type:'rect', x:rx, y:ry, w:rw, h:rh, color, width:w});
-  } else if(currentTool==='circle'){
-    const r = Math.hypot(p.x - startX, p.y - startY);
-    shapes.push({type:'circle', x:startX, y:startY, r, color, width:w});
-  } else if(currentTool==='dim'){
-    shapes.push({type:'dim', x:startX, y:startY, x2:p.x, y2:p.y, color, width:w, text: dimValueInput.value || ''});
-  }
-  redrawAll();
-}
-
-/* دعم موس ولمس */
-drawCanvas.addEventListener('mousedown', onPointerDown);
-drawCanvas.addEventListener('mousemove', onPointerMove);
-window.addEventListener('mouseup', onPointerUp);
-drawCanvas.addEventListener('touchstart', onPointerDown, {passive:false});
-drawCanvas.addEventListener('touchmove', onPointerMove, {passive:false});
-drawCanvas.addEventListener('touchend', onPointerUp);
-
-/* ====== أزرار وظيفية ====== */
-clearBtn.addEventListener('click', ()=>{
-  if(confirm('هل تريد مسح كل الرسومات؟')){ shapes = []; redrawAll(); }
-});
-fitBtn.addEventListener('click', ()=>{
-  if(!img.src) return alert('اختر صورة أولاً');
-  fitImageOnCanvas();
-  redrawAll();
-});
-
-/* دمج الخلفية + الرسم + عنوان وتصدير JPEG */
-mergeBtn.addEventListener('click', ()=>{
-  if(!img.src) return alert('اختر صورة أولاً');
-  // نرسم في canvas جديد بالحجم المطلوب
+/* ===== تصدير الصورة النهائية (Isometric look) ===== */
+exportBtn.addEventListener('click', ()=>{
+  if(!img.src){ alert('اختر صورة أولاً'); return; }
   const W = bgCanvas.width;
-  const H = bgCanvas.height + 120; // مساحة للعنوان فوق
-  const exportCanvas = document.createElement('canvas');
-  exportCanvas.width = W;
-  exportCanvas.height = H;
-  const ectx = exportCanvas.getContext('2d');
-
-  // خلفية
-  ectx.fillStyle = '#ffffff';
-  ectx.fillRect(0,0,W,H);
-
-  // عنوان ملون أعلى
-  ectx.font = "bold 28px Arial";
-  // رسم gradient text
+  const H = bgCanvas.height + 80;
+  const exportC = document.createElement('canvas'); exportC.width = W; exportC.height = H;
+  const ectx = exportC.getContext('2d');
+  // خلفية بيضاء
+  ectx.fillStyle = '#ffffff'; ectx.fillRect(0,0,W,H);
+  // عنوان ملون
+  ectx.font = "bold 26px Arial";
   const grad = ectx.createLinearGradient(0,0,W,0);
   grad.addColorStop(0,'#ff0055'); grad.addColorStop(0.5,'#ff8800'); grad.addColorStop(1,'#007bff');
-  ectx.fillStyle = grad;
-  ectx.textAlign = "center";
-  ectx.fillText("PRODUCT BY MOHAMED ASHRAF", W/2, 40);
-
-  // رسم الصورة الأساسية أسفل العنوان
+  ectx.fillStyle = grad; ectx.textAlign = "center";
+  ectx.fillText("PRODUCT BY MOHAMED ASHRAF", W/2, 34);
+  // رسم الصورة الأصلية
   ectx.drawImage(bgCanvas, 0, 60);
-
-  // رسم كل الأشكال بنفس النسبة
-  // نقوم بعمل نسخة من الداتا: نستدعي دوال الرسم مع إزاحة Y بمقدار 60
+  // رسم الأشكال بعمل إزاحة Y = 60
   shapes.forEach(s=>{
     ectx.lineWidth = s.width || 3;
     ectx.strokeStyle = s.color || '#000';
     ectx.fillStyle = s.color || '#000';
     if(s.type==='line'){
-      ectx.beginPath();
-      ectx.moveTo(s.x, s.y + 60);
-      ectx.lineTo(s.x2, s.y2 + 60);
-      ectx.stroke();
-    } else if(s.type==='rect'){
-      ectx.strokeRect(s.x, s.y + 60, s.w, s.h);
+      ectx.beginPath(); ectx.moveTo(s.x, s.y+60); ectx.lineTo(s.x2, s.y2+60); ectx.stroke();
     } else if(s.type==='circle'){
-      ectx.beginPath();
-      ectx.arc(s.x, s.y + 60, s.r, 0, Math.PI*2);
-      ectx.stroke();
+      ectx.beginPath(); ectx.arc(s.x, s.y+60, s.r, 0, Math.PI*2); ectx.stroke();
+    } else if(s.type==='arc'){
+      ectx.beginPath(); ectx.arc(s.x, s.y+60, s.r, s.start||0, s.end||Math.PI); ectx.stroke();
     } else if(s.type==='dim'){
-      ectx.beginPath();
-      ectx.moveTo(s.x, s.y + 60);
-      ectx.lineTo(s.x2, s.y2 + 60);
-      ectx.stroke();
-      // arrows small
-      ectx.beginPath();
-      ectx.moveTo(s.x, s.y + 60);
-      ectx.lineTo(s.x+8, s.y + 60 +8);
-      ectx.moveTo(s.x, s.y + 60);
-      ectx.lineTo(s.x+8, s.y + 60 -8);
-      ectx.stroke();
-      ectx.beginPath();
-      ectx.moveTo(s.x2, s.y2 + 60);
-      ectx.lineTo(s.x2-8, s.y2 + 60 +8);
-      ectx.moveTo(s.x2, s.y2 + 60);
-      ectx.lineTo(s.x2-8, s.y2 + 60 -8);
-      ectx.stroke();
-      ectx.font = "bold 16px Arial";
-      ectx.fillStyle = s.color || '#000';
-      ectx.textAlign = "center";
-      ectx.fillText(s.text || '', (s.x+s.x2)/2, (s.y+s.y2)/2 + 60 - 8);
+      ectx.beginPath(); ectx.moveTo(s.x, s.y+60); ectx.lineTo(s.x2, s.y2+60); ectx.stroke();
+      ectx.font="bold 16px Arial"; ectx.textAlign="center"; ectx.fillText(s.text||'', (s.x+s.x2)/2, (s.y+s.y2)/2 + 60 - 8);
     }
   });
-
-  // إظهار المعاينة في نافذة جديدة أو داخل صفحة جديدة للتحميل
-  const dataURL = exportCanvas.toDataURL('image/jpeg', 1.0);
-  // فتح داخل نافذة جديدة
-  const win = window.open('');
-  if(!win){ // لو منعت النوافذ المنبثقة
-    // تحميل مباشرة
-    const link = document.createElement('a');
-    link.href = dataURL;
-    link.download = 'engineering_product.jpg';
-    link.click();
-  } else {
-    win.document.write('<title>Export</title>');
-    win.document.write('<img src="'+dataURL+'" style="max-width:100%;">');
-    // تنزيل تلقائي
-    const a = win.document.createElement('a');
-    a.href = dataURL;
-    a.download = 'engineering_product.jpg';
-    a.textContent = 'اضغط هنا لتنزيل الصورة';
-    a.style.display='block';
-    a.style.margin='12px';
-    win.document.body.appendChild(a);
-  }
-});
-
-/* اعادة التحجيم عند تغيير حجم الشاشة */
-window.addEventListener('resize', ()=>{
-  if(img.src) fitImageOnCanvas();
+  // تنزيل
+  const dataURL = exportC.toDataURL('image/jpeg', 1.0);
+  const link = document.createElement('a');
+  link.href = dataURL; link.download = 'isometric_engineering.jpg'; link.click();
 });
 </script>
-
 </body>
 </html>
